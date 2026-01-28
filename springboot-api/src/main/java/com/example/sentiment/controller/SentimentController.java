@@ -1,32 +1,49 @@
 package com.example.sentiment.controller;
 
+import com.example.sentiment.model.SentimentRequest;
+import com.example.sentiment.model.SentimentResponse;
+import com.example.sentiment.entity.SentimentRecord;
+import com.example.sentiment.repository.SentimentRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.Map;
+import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
-@RequestMapping("/sentiment")
+@RequestMapping("/api/sentiment")
 public class SentimentController {
 
-@GetMapping
-public String home() {
-    return "Use POST /sentiment with JSON body";
-}
+    @Autowired
+    private SentimentRepository repo;
 
     @PostMapping
-    public String analyze(@RequestBody Map<String, String> input) {
+    public SentimentResponse analyze(@RequestBody SentimentRequest request) {
 
-        RestTemplate restTemplate = new RestTemplate();
+        String text = request.getText().toLowerCase();
+        String sentiment = "POSITIVE";
 
-        String mlUrl = "http://localhost:5000/predict";
+        if (text.contains("sad")
+                || text.contains("bad")
+                || text.contains("angry")
+                || text.contains("hate")
+                || text.contains("worst")) {
 
-        String result = restTemplate.postForObject(
-                mlUrl,
-                input,
-                String.class
-        );
+            sentiment = "NEGATIVE";
+        }
 
-        return result;
+        SentimentRecord record = new SentimentRecord();
+        record.setText(request.getText());
+        record.setSentiment(sentiment);
+
+        repo.save(record);
+
+        return new SentimentResponse(sentiment);
+    }
+
+    @GetMapping
+    public List<SentimentRecord> all() {
+        return repo.findAll();
     }
 }
